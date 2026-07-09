@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="brand-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#14c8d4" />
+    </linearGradient>
+  </defs>
+  <!-- Rounded Background -->
+  <rect width="32" height="32" rx="8" fill="#070d1c" />
+  <!-- Border outline -->
+  <rect x="0.5" y="0.5" width="31" height="31" rx="7.5" fill="none" stroke="url(#brand-grad)" stroke-opacity="0.3" />
+  <!-- Stylized "P" developer symbol -->
+  <path d="M9 7h9a6 6 0 0 1 0 12h-5v6H9V7zm4 4v4h5a2 2 0 1 0 0-4h-5z" fill="url(#brand-grad)" />
+  <!-- Small dot for developer/terminal flavor -->
+  <circle cx="21" cy="23" r="2" fill="#14c8d4" />
+</svg>

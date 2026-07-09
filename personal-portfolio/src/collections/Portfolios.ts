@@ -99,7 +99,16 @@ export const Portfolios: CollectionConfig = {
           label: 'Live Project URL',
           admin: {
             description: 'External link to the live project',
-            width: '33%',
+            width: '25%',
+          },
+        },
+        {
+          name: 'githubProjectUrl',
+          type: 'text',
+          label: 'GitHub Project URL',
+          admin: {
+            description: 'Link to GitHub repository',
+            width: '25%',
           },
         },
         {
@@ -108,7 +117,7 @@ export const Portfolios: CollectionConfig = {
           label: 'Android Project URL',
           admin: {
             description: 'Link to Google Play Store / Android App',
-            width: '33%',
+            width: '25%',
           },
         },
         {
@@ -117,8 +126,30 @@ export const Portfolios: CollectionConfig = {
           label: 'iOS Project URL',
           admin: {
             description: 'Link to Apple App Store / iOS App',
-            width: '33%',
+            width: '25%',
           },
+        },
+      ],
+    },
+    {
+      name: 'projectLinks',
+      type: 'array',
+      label: 'Additional Project Links',
+      admin: {
+        description: 'Specify any other links for this project (e.g. documentation, client site, blog post, etc.)',
+      },
+      fields: [
+        {
+          name: 'label',
+          type: 'text',
+          label: 'Link Label',
+          required: true,
+        },
+        {
+          name: 'url',
+          type: 'text',
+          label: 'Link URL',
+          required: true,
         },
       ],
     },

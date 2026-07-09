@@ -38,4 +38,22 @@ export default buildConfig({
       uploadsCollection: 'media',
     }),
   ],
+  async onInit(payload) {
+    try {
+      const pages = await payload.find({
+        collection: 'pages',
+        limit: 1,
+      })
+      if (pages.totalDocs === 0) {
+        console.log('No pages found in database. Running automatic seeding...')
+        const { seedDatabase } = await import('./utilities/seedDatabase')
+        await seedDatabase(payload)
+        console.log('Automatic seeding finished successfully!')
+      } else {
+        console.log('Database already has pages. Skipping seeding.')
+      }
+    } catch (error) {
+      console.error('Error during automatic database seed check:', error)
+    }
+  },
 })

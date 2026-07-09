@@ -277,6 +277,19 @@ export interface Page {
  * via the `definition` "PersonalPortfolioBlock".
  */
 export interface PersonalPortfolioBlock {
+  /**
+   * Check a section to show it on the portfolio. Uncheck to temporarily hide it.
+   */
+  sectionVisibility?: {
+    hero?: boolean | null;
+    skills?: boolean | null;
+    services?: boolean | null;
+    experience?: boolean | null;
+    projects?: boolean | null;
+    latestWorks?: boolean | null;
+    testimonials?: boolean | null;
+    cta?: boolean | null;
+  };
   hero: {
     badgeText?: string | null;
     titlePreHighlight?: string | null;
@@ -301,38 +314,36 @@ export interface PersonalPortfolioBlock {
     phone?: string | null;
     linkedinLabel?: string | null;
     linkedinLink?: string | null;
+    githubLabel?: string | null;
+    githubLink?: string | null;
   };
-  /**
-   * Shown as circular progress rings below the Core Mastery cards.
-   */
-  marqueeSkills?:
-    | {
-        label: string;
-        /**
-         * e.g., code, brush, bolt, style
-         */
-        icon?: string | null;
-        /**
-         * Used to fill the circular progress ring. E.g. 95 = 95%
-         */
-        proficiency?: number | null;
-        id?: string | null;
-      }[]
-    | null;
   skillsTitle?: string | null;
   skillsDescription?: string | null;
-  /**
-   * The 4 highlighted tool cards shown at the top of the Expertise & Tech Stack section (e.g. Figma, React, Tailwind, Next.js).
-   */
-  coreMastery?:
+  skillsCategories?:
     | {
         title: string;
-        subtitle?: string | null;
-        /**
-         * e.g., brush, code, style, bolt
-         */
-        icon?: string | null;
-        color?: ('primary' | 'secondary' | 'tertiary') | null;
+        iconName?:
+          | (
+              | 'layout'
+              | 'server'
+              | 'database'
+              | 'smartphone'
+              | 'cloud'
+              | 'file-text'
+              | 'shopping-bag'
+              | 'search'
+              | 'cpu'
+              | 'zap'
+              | 'credit-card'
+              | 'truck'
+            )
+          | null;
+        skills?:
+          | {
+              skillName: string;
+              id?: string | null;
+            }[]
+          | null;
         id?: string | null;
       }[]
     | null;
@@ -376,6 +387,11 @@ export interface PersonalPortfolioBlock {
           id?: string | null;
         }[]
       | null;
+  };
+  projectsSection: {
+    title?: string | null;
+    subtitle?: string | null;
+    selectedProjects: (number | Portfolio)[];
   };
   latestWorks: {
     title?: string | null;
@@ -462,6 +478,10 @@ export interface Portfolio {
    */
   liveProjectUrl?: string | null;
   /**
+   * Link to GitHub repository
+   */
+  githubProjectUrl?: string | null;
+  /**
    * Link to Google Play Store / Android App
    */
   androidProjectUrl?: string | null;
@@ -469,6 +489,16 @@ export interface Portfolio {
    * Link to Apple App Store / iOS App
    */
   iosProjectUrl?: string | null;
+  /**
+   * Specify any other links for this project (e.g. documentation, client site, blog post, etc.)
+   */
+  projectLinks?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
   /**
    * YouTube link for project video/demo
    */
@@ -944,6 +974,18 @@ export interface PagesSelect<T extends boolean = true> {
  * via the `definition` "PersonalPortfolioBlock_select".
  */
 export interface PersonalPortfolioBlockSelect<T extends boolean = true> {
+  sectionVisibility?:
+    | T
+    | {
+        hero?: T;
+        skills?: T;
+        services?: T;
+        experience?: T;
+        projects?: T;
+        latestWorks?: T;
+        testimonials?: T;
+        cta?: T;
+      };
   hero?:
     | T
     | {
@@ -970,24 +1012,22 @@ export interface PersonalPortfolioBlockSelect<T extends boolean = true> {
         phone?: T;
         linkedinLabel?: T;
         linkedinLink?: T;
-      };
-  marqueeSkills?:
-    | T
-    | {
-        label?: T;
-        icon?: T;
-        proficiency?: T;
-        id?: T;
+        githubLabel?: T;
+        githubLink?: T;
       };
   skillsTitle?: T;
   skillsDescription?: T;
-  coreMastery?:
+  skillsCategories?:
     | T
     | {
         title?: T;
-        subtitle?: T;
-        icon?: T;
-        color?: T;
+        iconName?: T;
+        skills?:
+          | T
+          | {
+              skillName?: T;
+              id?: T;
+            };
         id?: T;
       };
   expertise?:
@@ -1028,6 +1068,13 @@ export interface PersonalPortfolioBlockSelect<T extends boolean = true> {
               color?: T;
               id?: T;
             };
+      };
+  projectsSection?:
+    | T
+    | {
+        title?: T;
+        subtitle?: T;
+        selectedProjects?: T;
       };
   latestWorks?:
     | T
@@ -1120,8 +1167,16 @@ export interface PortfoliosSelect<T extends boolean = true> {
   shortDescription?: T;
   fullDescription?: T;
   liveProjectUrl?: T;
+  githubProjectUrl?: T;
   androidProjectUrl?: T;
   iosProjectUrl?: T;
+  projectLinks?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
   youtubeVideoUrl?: T;
   techStack?: T;
   customTechStack?:

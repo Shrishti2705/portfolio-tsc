@@ -34,6 +34,7 @@ import {
   Mail,
   Phone,
   Linkedin,
+  Github,
   Laptop,
   Monitor,
 } from 'lucide-react'
@@ -66,22 +67,20 @@ export interface PersonalPortfolioBlockProps {
     phone?: string | null
     linkedinLabel?: string | null
     linkedinLink?: string | null
+    githubLabel?: string | null
+    githubLink?: string | null
   } | null
-  marqueeSkills?: {
-    label: string
-    icon?: string | null
-    proficiency?: number | null
+  skillsCategories?: {
+    title: string
+    iconName?: 'layout' | 'server' | 'database' | 'smartphone' | 'cloud' | 'file-text' | 'shopping-bag' | 'search' | 'cpu' | 'zap' | 'credit-card' | 'truck' | null
+    skills?: {
+      skillName: string
+      id?: string | null
+    }[] | null
     id?: string | null
   }[] | null
   skillsTitle?: string | null
   skillsDescription?: string | null
-  coreMastery?: {
-    title: string
-    subtitle?: string | null
-    icon?: string | null
-    color?: 'primary' | 'secondary' | 'tertiary' | null
-    id?: string | null
-  }[] | null
   expertise?: {
     title?: string | null
     description?: string | null
@@ -118,6 +117,11 @@ export interface PersonalPortfolioBlockProps {
     exploreMoreLink?: string | null
     selectedWorks: (number | PortfolioType)[]
   } | null
+  projectsSection?: {
+    title?: string | null
+    subtitle?: string | null
+    selectedProjects: (number | PortfolioType)[]
+  } | null
   testimonialsSection?: {
     title?: string | null
     subtitle?: string | null
@@ -142,6 +146,16 @@ export interface PersonalPortfolioBlockProps {
       url: string
       id?: string | null
     }[] | null
+  } | null
+  sectionVisibility?: {
+    hero?: boolean | null
+    skills?: boolean | null
+    services?: boolean | null
+    experience?: boolean | null
+    projects?: boolean | null
+    latestWorks?: boolean | null
+    testimonials?: boolean | null
+    cta?: boolean | null
   } | null
 }
 
@@ -169,7 +183,7 @@ const SKILL_ICONS: Record<string, string> = {
   'Vue.js': 'devicon-vuejs-plain colored',
   'Tailwind': 'devicon-tailwindcss-plain colored',
   'Material UI': 'devicon-materialui-plain colored',
-  'Shadcn': 'devicon-react-original colored',
+  'Shadcn': '', // handled via custom SVG in renderSkillIcon
   // Backend
   'Node.js': 'devicon-nodejs-plain colored',
   'Express': 'devicon-express-original',
@@ -219,15 +233,69 @@ const SKILL_ICONS: Record<string, string> = {
   'Framer': 'devicon-figma-plain colored',
   'Webflow': 'devicon-css3-plain colored',
   // Payments & Logistics (plain fallbacks)
-  'MIPS': 'devicon-javascript-plain colored',
-  'PagSeguro': 'devicon-javascript-plain colored',
-  'RazorPay': 'devicon-javascript-plain colored',
-  'PhonePe': 'devicon-javascript-plain colored',
   'Stripe': 'devicon-stripe-original colored',
-  'Shippo': 'devicon-nodejs-plain colored',
-  'Amazon Shipping': 'devicon-amazonwebservices-plain colored',
-  'Delhivery': 'devicon-javascript-plain colored',
-  'FedEx': 'devicon-javascript-plain colored',
+}
+
+// ─── Render Skill Icon Helper ───────────────────────────────────────────────
+const renderSkillIcon = (skill: string) => {
+  // Custom SVG icons for skills without devicon support
+  if (skill === 'Shadcn') {
+    return (
+      <svg
+        viewBox="0 0 256 256"
+        className="w-5 h-5"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect width="256" height="256" rx="32" fill="#18181B" />
+        <path
+          d="M136 80L200 184H72L136 80Z"
+          stroke="white"
+          strokeWidth="16"
+          strokeLinejoin="round"
+          fill="none"
+        />
+        <circle cx="136" cy="176" r="20" fill="white" />
+      </svg>
+    )
+  }
+  const iconClass = SKILL_ICONS[skill]
+  if (iconClass) {
+    return <i className={`${iconClass} text-xl leading-none`} style={{ fontSize: '1.2rem' }} />
+  }
+
+  const lowerSkill = skill.toLowerCase()
+  if (
+    lowerSkill.includes('pay') ||
+    lowerSkill.includes('mips') ||
+    lowerSkill.includes('pagseguro') ||
+    lowerSkill.includes('stripe')
+  ) {
+    return <CreditCard className="w-5 h-5 text-blue-500 group-hover:text-blue-600 transition-colors" />
+  }
+  if (
+    lowerSkill.includes('shipping') ||
+    lowerSkill.includes('delhivery') ||
+    lowerSkill.includes('fedex') ||
+    lowerSkill.includes('shippo') ||
+    lowerSkill.includes('logistics')
+  ) {
+    return <Truck className="w-5 h-5 text-blue-500 group-hover:text-blue-600 transition-colors" />
+  }
+  if (
+    lowerSkill.includes('ai') ||
+    lowerSkill.includes('agentic') ||
+    lowerSkill.includes('prompt') ||
+    lowerSkill.includes('n8n') ||
+    lowerSkill.includes('mcp')
+  ) {
+    return <Cpu className="w-5 h-5 text-blue-500 group-hover:text-blue-600 transition-colors" />
+  }
+  if (lowerSkill.includes('amazon') || lowerSkill.includes('aws')) {
+    return <Cloud className="w-5 h-5 text-blue-500 group-hover:text-blue-600 transition-colors" />
+  }
+
+  return <Code2 className="w-5 h-5 text-[#4a6080]" />
 }
 
 // ─── Tech Categories Data ────────────────────────────────────────────────────
@@ -489,7 +557,218 @@ const StatCard: React.FC<{ number: string; label: string; delay?: number }> = ({
   )
 }
 
+// Full Apple logo SVG
+const AppleIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg viewBox="0 0 814 1000" fill="currentColor" {...props}>
+    <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 790.7 0 663 0 541.8c0-207.5 135.4-317.3 269-317.3 70.1 0 128.4 46.4 172.5 46.4 42.8 0 109.6-49.1 190.5-49.1zM642 110.2c32.1-38.2 54.3-91.2 54.3-144.2 0-7.7-.6-15.4-1.9-22.5-51.6 1.9-112.8 34.5-149.1 78-28.2 32.7-54.9 85.8-54.9 139.5 0 8.3 1.3 16.6 1.9 19.2 3.2.6 8.4 1.3 13.5 1.3 46.4 0 103.1-30.8 136.2-71.3z"/>
+  </svg>
+)
+
 // ─── Project Card ─────────────────────────────────────────────────────────────
+interface TextProjectCardProps {
+  project: PortfolioType
+  index: number
+  backUrl?: string
+}
+
+const TextProjectCard: React.FC<TextProjectCardProps> = ({ project, index, backUrl }) => {
+  const displayTitle = project.title || ''
+  const href = `/portfolio/${project.slug}`
+
+  // Bullets/key features
+  const features = project.keyFeatures || []
+
+  // Tech stack names
+  const techNames = [
+    ...(project.techStack || []).filter((t) => t !== 'Other'),
+    ...(project.customTechStack || []).map((t) => t.tech).filter(Boolean),
+  ]
+
+  const liveUrl = project.liveProjectUrl
+  const githubUrl = (project as any).githubProjectUrl
+  const androidUrl = project.androidProjectUrl
+  const iosUrl = project.iosProjectUrl
+  const customLinks = (project as any).projectLinks || []
+
+  const formattedIndex = String(index + 1).padStart(2, '0')
+
+  return (
+    <motion.div
+      key={project.id || index}
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, delay: index * 0.05 }}
+      className="group flex flex-col justify-between p-6 rounded-2xl border border-slate-200/80 dark:border-blue-950/40 relative shadow-sm hover:shadow-md hover:border-blue-500/40 dark:hover:border-blue-500/40 transition-all duration-300 min-h-[320px] bg-white/80 dark:bg-slate-950/40 backdrop-blur-md"
+    >
+      <div className="flex flex-col">
+        {/* Top: Index */}
+        <span className="text-[11px] font-black text-slate-300 dark:text-slate-700 tracking-wider select-none mb-3">
+          {formattedIndex}
+        </span>
+
+        {/* Title */}
+        <h4 className="text-lg md:text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100 group-hover:text-blue-500 transition-colors line-clamp-2">
+          <Link
+            href={href}
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('portfolio_back_url', backUrl ?? window.location.pathname)
+              }
+            }}
+          >
+            {displayTitle}
+          </Link>
+        </h4>
+
+        {/* Short Description */}
+        {project.shortDescription && (
+          <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 leading-relaxed mt-2">
+            {project.shortDescription}
+          </p>
+        )}
+
+        {/* Key Features (Bullets) */}
+        {features.length > 0 && (
+          <ul className="space-y-1.5 text-xs text-slate-500 dark:text-slate-400 mt-4 leading-relaxed">
+            {features.map((f, fi) => (
+              <li key={fi} className="flex items-start gap-1.5">
+                <span className="text-blue-500 shrink-0">•</span>
+                <span>{f.feature}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="flex flex-col space-y-4 mt-6">
+        {/* Tech Stack Tags */}
+        {techNames.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {techNames.map((tech, ti) => (
+              <span
+                key={ti}
+                className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100/80 dark:bg-slate-900/60 text-slate-600 dark:text-slate-400 border border-slate-200/50 dark:border-slate-800/80"
+              >
+                {tech}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Links row */}
+        {(liveUrl || androidUrl || iosUrl || githubUrl || customLinks.length > 0) && (
+          <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 pt-3 border-t border-slate-100 dark:border-slate-900/50">
+            {liveUrl && (
+              <a
+                href={liveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] font-bold text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0"
+              >
+                <Globe className="w-3 h-3" /> Live Demo
+              </a>
+            )}
+            {githubUrl && (
+              <a
+                href={githubUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] font-bold text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0"
+              >
+                <Code2 className="w-3 h-3" /> GitHub
+              </a>
+            )}
+            {iosUrl && (
+              <a
+                href={iosUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] font-bold text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0"
+              >
+                <AppleIcon className="w-3.5 h-3.5 mt-[-2px]" /> App Store
+              </a>
+            )}
+            {androidUrl && (
+              <a
+                href={androidUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] font-bold text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0"
+              >
+                <Smartphone className="w-3 h-3" /> Play Store
+              </a>
+            )}
+            {customLinks.map((link: any, li: number) => (
+              <a
+                key={li}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] font-bold text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0"
+              >
+                <ExternalLink className="w-3 h-3" /> {link.label}
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
+// Mapping of project slugs to their real screenshots on thespecialcharacter.com/portfolio
+const TSC_PROJECT_IMAGES: Record<string, string> = {
+  'in-house-furniture': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-26 115701.png',
+  'aptouring': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-24 164043.png',
+  'hermes-ai-agents-for-seo-optimization': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-24 120136-1.png',
+  'plai-sport-club': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-24 115200.png',
+  'vendelligent': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-24 111019.png',
+  'auco': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-24 110455.png',
+  'skillmatics-': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-24 105433.png',
+  'skillmatics-educational-products-ecommerce': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-24 105433.png',
+  'jupiter-money': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-24 104509.png',
+  'hire-ai': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 185446-1.png',
+  'ai-powered-lead-generation-automation': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 184845.png',
+  'dolgin': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 182406.png',
+  'the-chosen-tv': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 181458.png',
+  'idfc-first-bank': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 180937.png',
+  'foodboss-e-grocery--food-delivery-platform': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 180011.png',
+  'foodboss-web-mobile-application': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 180011.png',
+  'jove': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 174911.png',
+  'treadommand': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-24 113336.png',
+  'learning-dino': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 171618.png',
+  'demo-videp': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 183211.png',
+  '55redefined': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 163618.png',
+  'synechron-55-redefined': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 163618.png',
+  'bharat-rojgaar---government-linked-employment--job-portal': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 162122.png',
+  'bharat-rojgaar-government-employment-job-portal': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 162122.png',
+  'medusajobs': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 155926.png',
+  'strinex': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 151452.png',
+  'strainex-clean-tech-smart-grid-solutions': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 151452.png',
+  'yogateria-well-being-ecommerce': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 144105.png',
+  'yogateria': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 144105.png',
+  'lisco': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 150021.png',
+  'lisco-systems': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/Screenshot 2026-06-23 150021.png',
+  'wraprr-sustainable-packaging-ecommerce': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/wraprr.png',
+  'wraprr': 'https://minio-w0wsw4k40co8c8c88sw8s0o8.62.72.13.4.sslip.io/tsc-payload/wraprr.png',
+}
+
+const getTscProjectImage = (slug?: string | null): string | null => {
+  if (!slug) return null
+  const slugLower = slug.toLowerCase().trim()
+  if (TSC_PROJECT_IMAGES[slugLower]) {
+    return TSC_PROJECT_IMAGES[slugLower]
+  }
+  // Try substring fallback matches (e.g. "skillmatics" matches "skillmatics-")
+  for (const [key, value] of Object.entries(TSC_PROJECT_IMAGES)) {
+    if (slugLower.includes(key) || key.includes(slugLower)) {
+      return value
+    }
+  }
+  return null
+}
+
 interface CustomProjectCardProps {
   project: PortfolioType
   types: ('web' | 'mobile' | 'ai')[]
@@ -509,8 +788,10 @@ const CustomProjectCard: React.FC<CustomProjectCardProps> = ({ project, types, i
     ? `https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg`
     : null
 
-  const hasImage = !!coverImage?.url || !!fallbackThumbnailUrl
-  const imageUrl = coverImage?.url || fallbackThumbnailUrl || ''
+  const tscImg = getTscProjectImage(project.slug)
+  const isPlaceholder = !coverImage?.url || coverImage.url.includes('pruthvish')
+  const imageUrl = (isPlaceholder && tscImg) ? tscImg : (coverImage?.url || fallbackThumbnailUrl || tscImg || '')
+  const hasImage = !!imageUrl
 
   const domains = Array.isArray(project.domain) ? project.domain : project.domain ? [project.domain] : []
   const categories = domains.map((d) => (d === 'Other' && project.customDomain ? project.customDomain : d)).filter(Boolean)
@@ -541,6 +822,7 @@ const CustomProjectCard: React.FC<CustomProjectCardProps> = ({ project, types, i
             fill
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 rounded-xl"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            unoptimized
           />
         ) : (
           <div className="text-foreground/20 text-xs">No Cover Image</div>
@@ -670,30 +952,97 @@ const renderTimelineDescription = (text: string) => {
   )
 }
 
+const getSocialIcon = (label: string) => {
+  const normalized = label.toLowerCase();
+  if (normalized.includes('linkedin')) {
+    return (
+      <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+        <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+      </svg>
+    )
+  }
+  if (normalized.includes('twitter') || normalized === 'x') {
+    return (
+      <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+      </svg>
+    )
+  }
+  if (normalized.includes('skype')) {
+    return (
+      <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+        <path d="M23.176 14.502c.07-.375.106-.757.106-1.14 0-4.636-3.77-8.406-8.406-8.406-.383 0-.765.035-1.14.106C12.632 2.378 9.948.749 6.84.749c-4.42 0-8.026 3.606-8.026 8.026 0 3.108 1.63 5.792 4.313 6.9 0 .375-.035.757-.035 1.14 0 4.636 3.77 8.406 8.406 8.406.383 0 .765-.035 1.14-.106 1.104 2.684 3.788 4.313 6.896 4.313 4.42 0 8.026-3.606 8.026-8.026 0-3.108-1.63-5.792-4.313-6.906zm-9.356 5.86c-4.004 0-6.177-2.028-6.177-4.148 0-1.077.874-1.89 1.89-1.89.92 0 1.547.53 1.848 1.148.512 1.05 1.484 1.528 2.476 1.528 1.467 0 2.298-.778 2.298-1.626 0-.892-.61-1.396-2.58-1.874l-1.503-.362c-2.88-.707-4.084-2.112-4.084-4.137 0-2.616 2.28-4.438 5.79-4.438 3.518 0 5.63 1.768 5.63 3.766 0 .972-.733 1.732-1.74 1.732-.93 0-1.424-.46-1.733-1.043-.45-.85-1.193-1.28-2.148-1.28-1.122 0-1.892.574-1.892 1.396 0 .787.592 1.22 2.14 1.59l1.502.363c3.084.743 4.5 2.112 4.5 4.322 0 2.873-2.316 4.933-6.233 4.933z"/>
+      </svg>
+    )
+  }
+  if (normalized.includes('github')) {
+    return (
+      <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+      </svg>
+    )
+  }
+  return <span>{label}</span>;
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> = (props) => {
   const {
     hero,
-    marqueeSkills,
     skillsTitle,
     skillsDescription,
-    coreMastery,
+    skillsCategories,
     expertise,
     workExperience,
     latestWorks,
+    projectsSection,
     testimonialsSection,
     cta,
+    sectionVisibility,
   } = props
+
+  // ─── Section Visibility Flags ─────────────────────────────────────────────
+  // Default to true (visible) when the flag is null/undefined so existing
+  // records that pre-date this feature still show all sections normally.
+  const showHero        = sectionVisibility?.hero        !== false
+  const showSkills      = sectionVisibility?.skills      !== false
+  const showServices    = sectionVisibility?.services    !== false
+  const showExperience  = sectionVisibility?.experience  !== false
+  const showProjects    = sectionVisibility?.projects    !== false
+  const showLatestWorks = sectionVisibility?.latestWorks !== false
+  const showTestimonials = sectionVisibility?.testimonials !== false
+  const showCta         = sectionVisibility?.cta         !== false
+
+  const [showAllProjects, setShowAllProjects] = useState(false)
 
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeSection, setActiveSection] = useState('home')
   const [scrolled, setScrolled] = useState(false)
-  const [activeCategory, setActiveCategory] = useState<string>('frontend')
+
+  const renderedCategories = useMemo(() => {
+    if (skillsCategories && skillsCategories.length > 0) {
+      return skillsCategories.map((cat) => ({
+        id: cat.title.toLowerCase().replace(/\s+/g, '-'),
+        title: cat.title,
+        iconName: cat.iconName || 'layout',
+        skills: cat.skills?.map((s) => s.skillName) || [],
+      }))
+    }
+    return TECH_CATEGORIES
+  }, [skillsCategories])
+
+  const [activeCategory, setActiveCategory] = useState<string>('')
+
+  useEffect(() => {
+    if (renderedCategories.length > 0 && !activeCategory) {
+      setActiveCategory(renderedCategories[0].id)
+    }
+  }, [renderedCategories, activeCategory])
 
   const currentCategoryData = useMemo(() => {
-    return TECH_CATEGORIES.find((c) => c.id === activeCategory) || TECH_CATEGORIES[0]
-  }, [activeCategory])
+    return renderedCategories.find((c) => c.id === activeCategory) || renderedCategories[0]
+  }, [activeCategory, renderedCategories])
 
   // Track active section on scroll
   useEffect(() => {
@@ -706,7 +1055,7 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
         return
       }
 
-      const sectionIds = ['home', 'skills', 'services', 'experience', 'portfolio', 'contact']
+      const sectionIds = ['home', 'skills', 'services', 'experience', 'projects', 'portfolio', 'contact']
       let currentSection = 'home'
 
       for (const id of sectionIds) {
@@ -728,19 +1077,25 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
 
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>, id: string) => {
     e.preventDefault()
-    setMobileMenuOpen(false)
+    
+    // First scroll to the section
     if (id === 'home') {
       window.scrollTo({ top: 0, behavior: 'smooth' })
       window.history.pushState(null, '', '#home')
-      return
+    } else {
+      const element = document.getElementById(id)
+      if (element) {
+        const yOffset = -80
+        const y = element.getBoundingClientRect().top + window.scrollY + yOffset
+        window.scrollTo({ top: y, behavior: 'smooth' })
+        window.history.pushState(null, '', `#${id}`)
+      }
     }
-    const element = document.getElementById(id)
-    if (element) {
-      const yOffset = -80
-      const y = element.getBoundingClientRect().top + window.scrollY + yOffset
-      window.scrollTo({ top: y, behavior: 'smooth' })
-      window.history.pushState(null, '', `#${id}`)
-    }
+    
+    // Then close the mobile menu after a short delay so that touch/click event completes
+    setTimeout(() => {
+      setMobileMenuOpen(false)
+    }, 10)
   }
 
   // Hero image
@@ -750,7 +1105,7 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
 
   // CV File
   const cvFileObj = hero?.downloadCvFile as Media
-  const cvFileUrl = cvFileObj?.url || '#'
+  const cvFileUrl = cvFileObj?.url || '/media/Pruthvish_Modi_CV.pdf'
 
   // Scroll parallax
   const [scrollY, setScrollY] = useState(0)
@@ -826,6 +1181,9 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
   }, [activeTab, isInitialized])
 
   const populatedWorks = (latestWorks?.selectedWorks || [])
+    .filter((w): w is PortfolioType => w !== null && typeof w === 'object')
+
+  const populatedProjectsSectionWorks = (projectsSection?.selectedProjects || [])
     .filter((w): w is PortfolioType => w !== null && typeof w === 'object')
 
   const processedProjects = useMemo(() => {
@@ -914,7 +1272,8 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
     { label: 'ABOUT', id: 'skills' },
     { label: 'SERVICES', id: 'services' },
     { label: 'EXPERIENCE', id: 'experience' },
-    { label: 'PROJECTS', id: 'portfolio' },
+    { label: 'PROJECTS', id: 'projects' },
+    { label: 'PORTFOLIO', id: 'portfolio' },
     { label: 'CONTACT', id: 'contact' },
   ]
 
@@ -932,7 +1291,7 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
           boxShadow: scrolled ? '0 10px 30px rgba(59, 130, 246, 0.04)' : 'none',
         }}
       >
-        <div className="flex justify-between items-center px-6 md:px-8 py-4 max-w-7xl mx-auto h-20">
+        <div className="flex justify-between items-center py-4 px-container h-20 w-full">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -940,7 +1299,7 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
             className="flex items-center"
           >
             <span className="text-[22px] font-extrabold tracking-tight text-foreground select-none">
-              Pruthvish<span className="text-gradient font-black">.</span>
+              {hero?.titleHighlight ? hero.titleHighlight.split(' ')[0] : 'Pruthvish'}<span className="text-gradient font-black">.</span>
             </span>
           </motion.div>
 
@@ -952,8 +1311,9 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
             className="hidden md:flex items-center gap-8"
           >
             {navItems.map((item) => (
-              <button
+              <a
                 key={item.id}
+                href={`#${item.id}`}
                 onClick={(e) => scrollToSection(e, item.id)}
                 className={`relative text-[11px] font-bold tracking-[0.2em] transition-colors py-1 cursor-pointer ${
                   activeSection === item.id
@@ -970,11 +1330,11 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
                     transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                   />
                 )}
-              </button>
+              </a>
             ))}
           </motion.div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 md:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-foreground hover:text-blue-400 transition-colors md:hidden"
@@ -997,15 +1357,16 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
             >
               <div className="flex flex-col p-6 gap-1">
                 {navItems.map((item) => (
-                  <button
+                  <a
                     key={item.id}
+                    href={`#${item.id}`}
                     onClick={(e) => scrollToSection(e, item.id)}
                     className={`text-left py-3.5 text-sm font-bold tracking-widest border-b border-slate-100 transition-colors uppercase ${
                       activeSection === item.id ? 'text-blue-400' : 'text-muted-foreground hover:text-blue-500'
                     }`}
                   >
                     {item.label}
-                  </button>
+                  </a>
                 ))}
               </div>
             </motion.div>
@@ -1014,7 +1375,8 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
       </nav>
 
       {/* ─── Hero Section ─── */}
-      <section className="relative min-h-[100vh] flex items-center overflow-hidden px-6 py-20 bg-grid" id="home">
+      {showHero && (
+      <section className="relative min-h-[100vh] flex items-center overflow-hidden py-20 bg-grid" id="home">
         {/* Radial glows */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px]" />
@@ -1024,7 +1386,7 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
 
         <FloatingParticles />
 
-        <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+        <div className="w-full px-container grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
           {/* Left: Text */}
           <div className="flex flex-col gap-6">
             {hero?.badgeText && (
@@ -1070,7 +1432,7 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
               {hero?.description}
             </motion.p>
 
-            {/* Stats Row */}
+            {/* Stats Row — only Years of Experience + Completed Projects */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1097,7 +1459,7 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
                   })()}
                 </span>
                 <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
-                  {hero?.certificationLabel || 'PROFESSIONAL UI/UX'}
+                  {hero?.certificationLabel || 'COMPLETED PROJECTS'}
                 </span>
               </div>
             </motion.div>
@@ -1136,15 +1498,6 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
               transition={{ duration: 0.6, delay: 0.4 }}
               className="flex gap-4 mt-4 flex-wrap"
             >
-              {hero?.sayHiLabel && (
-                <Link
-                  href={hero.sayHiLink || '#contact'}
-                  className="border border-slate-900 dark:border-slate-100 text-slate-900 dark:text-slate-100 hover:bg-slate-900 hover:text-white dark:hover:bg-slate-100 dark:hover:text-slate-900 px-8 py-3.5 rounded-lg text-base font-bold transition-all inline-flex items-center gap-2"
-                >
-                  {hero.sayHiLabel}
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              )}
               {hero?.downloadCvLabel && (
                 <a
                   href={cvFileUrl}
@@ -1165,6 +1518,17 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
                 >
                   <Linkedin className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                   {hero.linkedinLabel || 'LinkedIn'}
+                </a>
+              )}
+              {hero?.githubLink && (
+                <a
+                  href={hero.githubLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/30 px-8 py-3.5 rounded-lg text-base font-bold transition-all inline-flex items-center gap-2"
+                >
+                  <Github className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  {hero.githubLabel || 'GitHub'}
                 </a>
               )}
             </motion.div>
@@ -1207,6 +1571,7 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
                     className="w-full h-full object-cover rounded-full"
                     sizes="(max-width: 768px) 100vw, 340px"
                     priority
+                    unoptimized
                   />
                 )}
                 {/* Blue tint overlay */}
@@ -1219,7 +1584,11 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
                 transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
                 className="absolute bottom-4 -left-4 glass-panel px-4 py-3 rounded-2xl border border-blue-500/20 z-20 glow-blue"
               >
-                <p className="text-xs font-bold text-blue-400">✦ AVAILABLE FOR WORK</p>
+                <p className="text-xs font-bold text-blue-400">
+                  {hero?.stat3Label
+                    ? (hero.stat3Number ? `${hero.stat3Number} ${hero.stat3Label}` : hero.stat3Label)
+                    : '✦ AVAILABLE FOR WORK'}
+                </p>
               </motion.div>
 
               {/* Floating badge: Projects */}
@@ -1228,7 +1597,11 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
                 transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
                 className="absolute top-4 -right-4 glass-panel px-4 py-3 rounded-2xl border border-cyan-500/20 z-20"
               >
-                <p className="text-xs font-bold text-cyan-400">50+ Projects Done</p>
+                <p className="text-xs font-bold text-cyan-400">
+                  {hero?.stat4Label
+                    ? (hero.stat4Number ? `${hero.stat4Number} ${hero.stat4Label}` : hero.stat4Label)
+                    : 'Full Stack Developer'}
+                </p>
               </motion.div>
             </div>
           </motion.div>
@@ -1251,8 +1624,10 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
           </motion.div>
         </motion.div>
       </section>
+      )}
 
       {/* ─── Tech Skills Section ─── */}
+      {showSkills && (
       <section
         className="py-28 relative overflow-hidden"
         id="skills"
@@ -1269,7 +1644,7 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
         {/* Top-center glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full blur-[120px] pointer-events-none" style={{ background: 'radial-gradient(ellipse, rgba(59,130,246,0.10) 0%, transparent 70%)' }} />
 
-        <div className="max-w-4xl mx-auto px-6 relative z-10">
+        <div className="w-full px-container relative z-10">
           {/* Section heading */}
           <div className="text-center mb-12">
             <motion.h2
@@ -1279,7 +1654,7 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               className="text-4xl md:text-5xl font-black text-[#0d1f3d] tracking-tight"
             >
-              Technical Skills
+              {skillsTitle || 'Technical Skills'}
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 16 }}
@@ -1288,14 +1663,14 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
               transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
               className="mt-3 text-[#4a6080] text-base"
             >
-              My expertise across various technologies and tools
+              {skillsDescription || 'My expertise across various technologies and tools'}
             </motion.p>
           </div>
 
           {/* Tab Bar */}
           <div className="mb-8">
             <div className="flex flex-wrap gap-2 justify-center">
-              {TECH_CATEGORIES.map((category) => {
+              {renderedCategories.map((category) => {
                 const isActive = activeCategory === category.id
                 return (
                   <button
@@ -1303,8 +1678,8 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
                     onClick={() => setActiveCategory(category.id)}
                     className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 whitespace-nowrap select-none ${
                       isActive
-                        ? 'bg-[#1e3a8a] text-white border border-[#1e3a8a] shadow-md'
-                        : 'text-[#4a6080] hover:text-[#1e3a8a] hover:bg-white border border-transparent hover:border-[#bfdbfe]'
+                        ? 'btn-dark text-white shadow-md'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-slate-800/30 border border-transparent'
                     }`}
                   >
                     {category.title}
@@ -1326,7 +1701,7 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
               style={{ background: '#ffffff', boxShadow: '0 4px 24px rgba(30,60,120,0.07)' }}
             >
               <div className="p-6 md:p-8 flex flex-wrap gap-3 justify-center">
-                {currentCategoryData.skills.map((skill, i) => {
+                {currentCategoryData?.skills?.map((skill, i) => {
                   const iconClass = SKILL_ICONS[skill]
                   return (
                     <motion.div
@@ -1339,11 +1714,7 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
                       className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg border border-[rgba(191,213,245,0.8)] cursor-default select-none transition-all duration-200 hover:border-[rgba(59,130,246,0.5)] hover:bg-[#eff6ff] group"
                       style={{ background: '#f8faff' }}
                     >
-                      {iconClass ? (
-                        <i className={`${iconClass} text-xl leading-none`} style={{ fontSize: '1.2rem' }} />
-                      ) : (
-                        <Code2 className="w-5 h-5 text-[#4a6080]" />
-                      )}
+                      {renderSkillIcon(skill)}
                       <span className="text-sm font-medium text-[#1e3a8a] group-hover:text-[#1e40af] transition-colors duration-150 whitespace-nowrap">
                         {skill}
                       </span>
@@ -1355,10 +1726,11 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
           </AnimatePresence>
         </div>
       </section>
+      )}
 
       {/* ─── Services Section ─── */}
-      {expertise && (
-        <section className="py-24 max-w-7xl mx-auto px-6 relative" id="services">
+      {showServices && expertise && (
+        <section className="py-24 px-container relative w-full" id="services">
           <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-blue-600/5 rounded-full blur-[100px] pointer-events-none" />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
@@ -1489,25 +1861,8 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
                           </div>
                         </div>
 
-                        {/* Right part: Number & CTA Button */}
+                        {/* Right part: CTA Button */}
                         <div className="flex items-center gap-4 shrink-0 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-blue-100/50">
-                          <div className="flex items-center gap-3">
-                            {card.projectsCountText && card.projectsCountText !== 'READ MORE' && (
-                              <span
-                                className="text-xs font-bold tracking-wider"
-                                style={{ color: '#3b82f6' }}
-                              >
-                                {card.projectsCountText}
-                              </span>
-                            )}
-                            <span
-                              className="text-xs font-black tracking-wider select-none"
-                              style={{ color: 'rgba(59, 130, 246, 0.25)' }}
-                            >
-                              {String(idx + 1).padStart(2, '0')}
-                            </span>
-                          </div>
-
                           <motion.div
                             whileHover={{ x: 3 }}
                             className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
@@ -1532,12 +1887,12 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
       )}
 
       {/* ─── Work Experience Section ─── */}
-      {workExperience && workExperience.timeline && workExperience.timeline.length > 0 && (
+      {showExperience && workExperience && workExperience.timeline && workExperience.timeline.length > 0 && (
         <section className="py-24 relative overflow-hidden" id="experience">
           <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
 
-          <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="w-full px-container relative z-10">
             {/* Standardized Section Badge & Heading */}
             <div className="mb-16 text-left">
               <span className="section-badge mb-4 inline-flex">
@@ -1603,9 +1958,58 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
         </section>
       )}
 
+      {/* ─── Projects Section (Text Cards Grid) ─── */}
+      {showProjects && projectsSection && populatedProjectsSectionWorks.length > 0 && (
+        <section className="py-24 px-container relative w-full" id="projects">
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px] pointer-events-none" />
+
+          <div className="mb-16 text-left">
+            <span className="section-badge mb-4 inline-flex">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+              Projects
+            </span>
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-4xl md:text-5xl font-black tracking-tight mt-4 text-[#0d1f3d] dark:text-foreground"
+            >
+              {projectsSection.title || 'Projects/Contractual'}
+            </motion.h2>
+            {projectsSection.subtitle && (
+              <p className="text-muted-foreground text-base mt-2">{projectsSection.subtitle}</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {populatedProjectsSectionWorks
+              .slice(0, showAllProjects ? undefined : 6)
+              .map((project, index) => (
+                <TextProjectCard
+                  key={`text-proj-${project.id || index}`}
+                  project={project}
+                  index={index}
+                  backUrl={pathname}
+                />
+              ))}
+          </div>
+
+          {populatedProjectsSectionWorks.length > 6 && (
+            <div className="flex justify-center mt-12">
+              <button
+                onClick={() => setShowAllProjects(!showAllProjects)}
+                className="btn-dark text-white px-8 py-3.5 rounded-xl text-sm font-bold tracking-wider hover:scale-[1.02] active:scale-95 transition-all shadow-md uppercase"
+              >
+                {showAllProjects ? 'Show Less Projects ↑' : 'View All Projects ↓'}
+              </button>
+            </div>
+          )}
+        </section>
+      )}
+
       {/* ─── Selected Projects Section ─── */}
-      {latestWorks && populatedWorks.length > 0 && (
-        <section className="py-24 max-w-7xl mx-auto px-6 relative" id="portfolio">
+      {showLatestWorks && latestWorks && populatedWorks.length > 0 && (
+        <section className="py-24 px-container relative w-full" id="portfolio">
           <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none" />
 
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-4">
@@ -1620,7 +2024,7 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
                 viewport={{ once: true }}
                 className="text-4xl md:text-5xl font-black tracking-tight mt-4"
               >
-                {latestWorks.title || 'Selected Projects'}
+                {latestWorks.title === 'Selected Projects' ? 'Featured Portfolios' : (latestWorks.title || 'Featured Portfolios')}
               </motion.h2>
               {latestWorks.subtitle && (
                 <p className="text-muted-foreground text-base mt-2">{latestWorks.subtitle}</p>
@@ -1775,13 +2179,14 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
         </section>
       )}
 
+
       {/* ─── Testimonials Section ─── */}
-      {testimonials.length > 0 && (
+      {showTestimonials && testimonials.length > 0 && (
         <section className="py-24 text-center relative overflow-hidden" id="testimonials">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-500/5 rounded-full blur-[100px] pointer-events-none" />
           <div className="absolute inset-0 bg-dot-pattern opacity-20 pointer-events-none" />
 
-          <div className="max-w-5xl mx-auto px-6 relative z-10">
+          <div className="w-full px-container relative z-10">
             <SectionTitle
               badge="Testimonials"
               title={<>{testimonialsSection?.title || 'What Clients Say'}</>}
@@ -1859,111 +2264,68 @@ export const PersonalPortfolioComponent: React.FC<PersonalPortfolioBlockProps> =
         </section>
       )}
 
-      {/* ─── CTA / Contact Section ─── */}
-      {cta && (
-        <section className="py-20 px-6 max-w-7xl mx-auto" id="contact">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="relative rounded-3xl overflow-hidden border border-blue-800/30 shadow-2xl"
-            style={{
-              background: 'linear-gradient(135deg, #0a1628 0%, #0d1f3d 50%, #0a1628 100%)',
-              boxShadow: '0 0 80px rgba(59,130,246,0.12), 0 0 120px rgba(20,200,212,0.06)',
-            }}
-          >
-            {/* Background glows */}
-            <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/15 rounded-full blur-[120px] pointer-events-none" />
-            <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none" />
-            <div className="absolute inset-0 bg-grid opacity-30 pointer-events-none" />
+      {/* ─── CTA / Contact Section & Footer ─── */}
+      {showCta && (
+      <section className="bg-[#0d1f3d] text-zinc-100 py-24 border-t border-[#0b1628]/80 relative overflow-hidden" id="contact">
+        <div className="absolute inset-0 bg-grid opacity-5 pointer-events-none" />
+        <div className="w-full px-container text-center space-y-8 relative z-10">
+          {cta && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="space-y-6"
+            >
+              <h2 className="text-3xl md:text-5xl font-black leading-tight uppercase tracking-wider text-white">
+                {cta.title || "OK. LET'S CREATE SOMETHING GREAT TOGETHER."}
+              </h2>
+              
+              <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white mt-6">
+                {hero?.titleHighlight ? `${hero.titleHighlight.split(' ')[0]}.` : 'Pruthvish.'}
+              </h3>
 
-            {/* Animated border shimmer */}
-            <div className="absolute inset-0 rounded-3xl animate-shimmer pointer-events-none" />
-
-            <div className="relative z-10 p-12 md:p-16 flex flex-col items-center justify-center text-center space-y-8">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
-                className="space-y-6 max-w-2xl mx-auto"
-              >
-                <span className="section-badge">Let's Work Together</span>
-                <h2 className="text-3xl md:text-5xl font-black leading-tight uppercase tracking-wide text-white mt-4">
-                  {cta.title || "OK. LET'S CREATE SOMETHING GREAT TOGETHER."}
-                </h2>
-                <div className="space-y-3">
-                  <p className="text-blue-200/70 text-lg">{cta.preEmailText || 'Start by saying hi'}</p>
-                  {cta.email && (
-                    <a
-                      href={`mailto:${cta.email}`}
-                      className="text-2xl md:text-3xl font-bold text-gradient hover:scale-105 transition-transform block"
-                    >
-                      {cta.email}
-                    </a>
-                  )}
-                </div>
-              </motion.div>
-
-              <div className="flex flex-col items-center gap-6 pt-6 border-t border-blue-800/40 w-full max-w-md">
-                {cta.address && (
-                  <div className="space-y-1 text-center flex items-start gap-2">
-                    <MapPin className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs font-bold tracking-widest text-blue-400/60 uppercase">{cta.addressTitle || 'INFORMATION'}</p>
-                      <p className="text-blue-100/70 text-sm">{cta.address}</p>
-                    </div>
-                  </div>
-                )}
-                {cta.links && cta.links.length > 0 && (
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {cta.links.map((link) => (
-                      <a
-                        key={link.id || link.label}
-                        href={link.url}
-                        className="px-4 py-1.5 rounded-full glass-panel border border-blue-700/30 hover:border-blue-400/50 hover:bg-blue-900/20 transition-all text-[10px] font-bold tracking-wider uppercase text-blue-200/70 hover:text-blue-200"
-                      >
-                        {link.label}
-                      </a>
-                    ))}
-                  </div>
-                )}
+              {/* One line professional and email, number, address */}
+              <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs md:text-sm text-zinc-300 font-medium mt-4">
+                <span>{hero?.introduction || "Senior Full-Stack Developer & AI-First Engineer"}</span>
+                <span className="text-blue-400/40 hidden sm:inline">•</span>
+                <a href={`mailto:${cta.email || hero?.email || 'iampruthvishmodi@gmail.com'}`} className="hover:text-blue-300 text-white transition-colors">
+                  {cta.email || hero?.email || 'iampruthvishmodi@gmail.com'}
+                </a>
+                <span className="text-blue-400/40 hidden sm:inline">•</span>
+                <a href={`tel:${hero?.phone || '+916353538827'}`} className="hover:text-blue-300 text-white transition-colors">
+                  {hero?.phone || '+916353538827'}
+                </a>
+                <span className="text-blue-400/40 hidden sm:inline">•</span>
+                <span className="text-zinc-300">{cta.address || hero?.location || '8 GaneshKunj Society New Ranip Ahemdabad,Gujarat 382480'}</span>
               </div>
-            </div>
-          </motion.div>
-        </section>
-      )}
+            </motion.div>
+          )}
 
-      {/* ─── Footer ─── */}
-      <footer className="py-12 border-t border-border bg-background2 relative overflow-hidden">
-        <div className="absolute inset-0 bg-grid opacity-30 pointer-events-none" />
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6 relative z-10">
-          <div className="flex items-center gap-3">
-            <span className="font-black text-lg text-gradient">{hero?.titleHighlight || 'Pruthvish Modi'}</span>
-            <span className="text-blue-900">|</span>
-            <p className="text-muted-foreground text-xs">
-              © {new Date().getFullYear()} All rights reserved.
-            </p>
-          </div>
-          <div className="flex items-center gap-6">
-            {['portfolio', 'services', 'contact'].map((link) => (
+          {/* Social Icons */}
+          <div className="flex justify-center items-center gap-6 pt-4">
+            {(cta?.links && cta.links.length > 0 ? cta.links : [
+              { label: 'GitHub', url: hero?.githubLink || 'https://github.com/Pruthvishmodi' },
+              { label: 'LinkedIn', url: hero?.linkedinLink || 'https://www.linkedin.com/in/impruthvish-modi/' }
+            ]).map((link) => (
               <a
-                key={link}
-                href={`#${link}`}
-                className="text-xs text-muted-foreground hover:text-blue-400 transition-colors capitalize hover-underline"
+                key={link.id || link.label}
+                href={link.url}
+                className="text-zinc-300 hover:text-white transition-colors p-2 hover:scale-110 transform duration-200"
+                aria-label={link.label}
               >
-                {link.charAt(0).toUpperCase() + link.slice(1)}
+                {getSocialIcon(link.label)}
               </a>
             ))}
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">
-              Crafted with <span className="text-blue-400">♥</span> & precision
-            </p>
+
+          {/* Copyright */}
+          <div className="pt-12 border-t border-blue-900/40 text-[11px] text-zinc-400 tracking-wider font-normal">
+            {'©'} 2026 {hero?.titleHighlight || 'Pruthvish Modi'}. All Rights Reserved
           </div>
         </div>
-      </footer>
+      </section>
+      )}
     </div>
   )
 }

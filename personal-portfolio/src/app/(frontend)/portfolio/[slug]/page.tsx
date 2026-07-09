@@ -3,6 +3,29 @@ import configPromise from '@payload-config'
 import { notFound } from 'next/navigation'
 import React from 'react'
 import { PortfolioDetailComponent } from '@/blocks/PortfolioDetail/Component'
+import type { Metadata } from 'next'
+
+export async function generateMetadata({ params: paramsPromise }: Args): Promise<Metadata> {
+  const { slug = '' } = await paramsPromise
+  const payload = await getPayload({ config: configPromise })
+
+  const result = await payload.find({
+    collection: 'portfolios',
+    where: { slug: { equals: slug } },
+  })
+
+  const portfolio = result.docs?.[0] || null
+  if (!portfolio) {
+    return {
+      title: 'Project Not Found',
+    }
+  }
+
+  return {
+    title: portfolio.title,
+    description: portfolio.shortDescription || `Detailed case study for ${portfolio.title}`,
+  }
+}
 
 type Args = {
   params: Promise<{ slug?: string }>

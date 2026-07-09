@@ -4,6 +4,9 @@ import React from 'react'
 import configPromise from '@payload-config'
 import { RenderBlocks } from '@/components/RenderBlocks'
 
+// Always fetch fresh data — so Payload content/image changes appear immediately
+export const dynamic = 'force-dynamic'
+
 export default async function HomePage() {
   const headers = await getHeaders()
   const payload = await getPayload({ config: configPromise })

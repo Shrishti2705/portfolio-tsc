@@ -17,6 +17,28 @@ import {
 } from 'lucide-react'
 import type { Media, Portfolio } from '@/payload-types'
 import RichText from '@/components/RichText'
+import { TSC_PROJECT_DATA } from './tscProjectData'
+
+const getLiveDataForSlug = (slug?: string | null) => {
+  if (!slug) return null
+  const slugLower = slug.toLowerCase().trim()
+  
+  // Try exact match first (case-insensitive)
+  for (const [key, value] of Object.entries(TSC_PROJECT_DATA)) {
+    if (key.toLowerCase().trim() === slugLower) {
+      return value
+    }
+  }
+
+  // Try substring fallback matches (case-insensitive)
+  for (const [key, value] of Object.entries(TSC_PROJECT_DATA)) {
+    const keyLower = key.toLowerCase().trim()
+    if (slugLower.includes(keyLower) || keyLower.includes(slugLower)) {
+      return value
+    }
+  }
+  return null
+}
 
 // Full (unbitten) Apple logo
 const AppleIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -60,11 +82,65 @@ interface ThumbItem {
   localVideoUrl?: string | null
 }
 
+interface MergedPortfolio extends Omit<Portfolio, 'screenshots' | 'videoThumbnail' | 'shortVideo' | 'techStack' | 'customTechStack'> {
+  shortVideo?: (number | null) | Media | { url?: string | null; mimeType?: string | null } | null
+  videoThumbnail?: (number | null) | Media | { url?: string | null } | null
+  screenshots?:
+    | {
+        image: number | Media | { url?: string | null; alt?: string | null }
+        caption?: string | null
+        id?: string | null
+      }[]
+    | null
+  techStack?: Portfolio['techStack'] | null
+  customTechStack?: Portfolio['customTechStack'] | null
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export const PortfolioDetailComponent: React.FC<{
   portfolio: Portfolio
   relatedPortfolios?: Portfolio[] | null
 }> = ({ portfolio }) => {
+  const liveData = getLiveDataForSlug(portfolio.slug)
+  
+  const mergedPortfolio = useMemo<MergedPortfolio>(() => {
+    if (!liveData) return portfolio
+    
+    // Format screenshots as Media objects
+    const mappedScreenshots = liveData.screenshots
+      ? liveData.screenshots.map((s: any) => ({
+          image: {
+            url: s.url,
+            alt: s.caption || '',
+          },
+          caption: s.caption || undefined,
+        }))
+      : portfolio.screenshots
+
+    // Format videoThumbnail as Media object
+    const mappedVideoThumbnail = liveData.videoThumbnail
+      ? { url: liveData.videoThumbnail }
+      : portfolio.videoThumbnail
+
+    // Format shortVideo as Media object
+    const mappedShortVideo = liveData.shortVideo
+      ? { url: liveData.shortVideo.url, mimeType: liveData.shortVideo.mimeType }
+      : portfolio.shortVideo
+
+    return {
+      ...portfolio,
+      youtubeVideoUrl: liveData.youtubeVideoUrl || portfolio.youtubeVideoUrl,
+      shortVideo: mappedShortVideo,
+      videoThumbnail: mappedVideoThumbnail,
+      screenshots: mappedScreenshots,
+      techStack: (liveData.techStack && liveData.techStack.length > 0) ? liveData.techStack : portfolio.techStack,
+      customTechStack: (liveData.customTechStack && liveData.customTechStack.length > 0) ? liveData.customTechStack : portfolio.customTechStack,
+      liveProjectUrl: liveData.liveProjectUrl || portfolio.liveProjectUrl,
+      androidProjectUrl: liveData.androidProjectUrl || portfolio.androidProjectUrl,
+      iosProjectUrl: liveData.iosProjectUrl || portfolio.iosProjectUrl,
+    }
+  }, [portfolio, liveData])
+
   const {
     title,
     shortDescription,
@@ -86,7 +162,8 @@ export const PortfolioDetailComponent: React.FC<{
     liveProjectUrl,
     androidProjectUrl,
     iosProjectUrl,
-  } = portfolio
+    videoThumbnail,
+  } = mergedPortfolio
 
   // ── Derive thumbnails ─────────────────────────────────────────────────────
   const hasVideo = !!youtubeVideoUrl || !!shortVideo
@@ -98,11 +175,11 @@ export const PortfolioDetailComponent: React.FC<{
 
     // If video exists, add it as the first item
     if (hasVideo && (videoId || localVideoUrl)) {
-      const videoThumbUrl = portfolio.videoThumbnail
-        ? (portfolio.videoThumbnail as Media).url
+      const videoThumbUrl = videoThumbnail
+        ? (videoThumbnail as Media).url
         : videoId
         ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
-        : (portfolio.screenshots?.[0]?.image as Media)?.url
+        : (screenshots?.[0]?.image as Media)?.url
       
       items.push({
         type: 'video',
@@ -130,7 +207,7 @@ export const PortfolioDetailComponent: React.FC<{
 
     // Fallback to coverMedia if list is still empty
     if (items.length === 0) {
-      const coverMedia = (portfolio.videoThumbnail || portfolio.screenshots?.[0]?.image) as Media
+      const coverMedia = (videoThumbnail || screenshots?.[0]?.image) as Media
       if (coverMedia?.url) {
         items.push({
           type: 'image',
@@ -141,7 +218,7 @@ export const PortfolioDetailComponent: React.FC<{
     }
 
     return items
-  }, [hasVideo, videoId, localVideoUrl, screenshots, portfolio.screenshots, portfolio.videoThumbnail, title])
+  }, [hasVideo, videoId, localVideoUrl, screenshots, videoThumbnail, title])
 
   const [activeThumbIdx, setActiveThumbIdx] = useState(0)
   const [videoOpen, setVideoOpen] = useState(false)
@@ -368,7 +445,7 @@ export const PortfolioDetailComponent: React.FC<{
                           fill
                           className="object-contain p-1"
                           sizes="140px"
-                          unoptimized={thumb.type === 'video' && !portfolio.videoThumbnail}
+                          unoptimized={thumb.type === 'video' && !videoThumbnail}
                         />
                       ) : (
                         <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
@@ -389,7 +466,6 @@ export const PortfolioDetailComponent: React.FC<{
               </div>
             )}
           </motion.section>
-
           {/* ══════════════════════════════════════════
               RIGHT — Project details (40%)
           ══════════════════════════════════════════ */}
